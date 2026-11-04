@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Assign metarole-ldap-group to existing application roles (idempotent).
+     Prefer role recompute after template-role-ldap is wired; this is a fallback. -->
+<s:search xmlns:s="http://midpoint.evolveum.com/xml/ns/public/model/scripting-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3">
+    <s:type>c:RoleType</s:type>
+    <s:searchFilter>
+        <q:text>
+            name != "metarole-ldap-group"
+            and name != "Superuser"
+            and name != "End user"
+            and name != "Approver"
+            and name != "Reviewer"
+            and name != "Delegator"
+        </q:text>
+    </s:searchFilter>
+    <s:action>
+        <s:type>modify</s:type>
+        <s:parameter>
+            <s:name>delta</s:name>
+            <c:value>
+                <s:itemDelta>
+                    <t:modificationType>add</t:modificationType>
+                    <t:path>assignment</t:path>
+                    <t:value>
+                        <targetRef oid="a1b2c3d4-e5f6-7890-abcd-ef1234567891" type="c:RoleType"/>
+                    </t:value>
+                </s:itemDelta>
+            </c:value>
+        </s:parameter>
+    </s:action>
+</s:search>

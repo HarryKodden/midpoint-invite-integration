@@ -1,0 +1,22 @@
+# Secrets / local profiles (keep *.example tracked)
+.env
+.env.invite
+.test.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# LaTeX build junk (keep main.pdf / figures tracked)
+docs/latex/main.aux
+docs/latex/main.log
+docs/latex/main.out
+docs/latex/main.toc
+docs/latex/main.fls
+docs/latex/main.fdb_latexmk
+docs/latex/main.synctex.gz
+
+# Parked stacks (code may remain on disk; not part of default compose deposit)
+# ldap/ and moodle/ are still in-tree for experiments — do not ignore if present

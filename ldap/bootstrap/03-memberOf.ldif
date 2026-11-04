@@ -1,0 +1,18 @@
+# Override osixia default: MidPoint provisions groupOfNames/member, not
+# groupOfUniqueNames/uniqueMember. Without this, account memberOf stays empty
+# and MidPoint cannot deprovision group memberships.
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: memberof
+
+dn: olcOverlay={0}memberof,olcDatabase={1}{{ LDAP_BACKEND }},cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcMemberOf
+olcOverlay: {0}memberof
+olcMemberOfDangling: ignore
+olcMemberOfRefInt: TRUE
+olcMemberOfGroupOC: groupOfNames
+olcMemberOfMemberAD: member
+olcMemberOfMemberOfAD: memberOf

@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- OpenLDAP resource for this stack (ldap:389, dc=example,dc=org).
+     Users → inetOrgPerson under ou=people; Roles → groupOfNames under ou=groups. -->
+<resource oid="a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <name>OpenLDAP</name>
+    <description>
+        In-cluster OpenLDAP (compose service ldap). MidPoint provisions
+        accounts and groups; the demo application can look them up.
+    </description>
+
+    <connectorRef type="ConnectorType">
+        <filter>
+            <q:text>connectorType = "com.evolveum.polygon.connector.ldap.LdapConnector"</q:text>
+        </filter>
+    </connectorRef>
+
+    <connectorConfiguration
+            xmlns:icfcldap="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-ldap/com.evolveum.polygon.connector.ldap.LdapConnector">
+        <icfc:configurationProperties>
+            <icfcldap:host>ldap</icfcldap:host>
+            <icfcldap:port>389</icfcldap:port>
+            <icfcldap:baseContext>dc=example,dc=org</icfcldap:baseContext>
+            <icfcldap:bindDn>cn=admin,dc=example,dc=org</icfcldap:bindDn>
+            <icfcldap:bindPassword>
+                <t:clearValue>admin</t:clearValue>
+            </icfcldap:bindPassword>
+            <icfcldap:passwordHashAlgorithm>SSHA</icfcldap:passwordHashAlgorithm>
+            <icfcldap:vlvSortAttribute>uid,cn,ou,dc</icfcldap:vlvSortAttribute>
+            <icfcldap:vlvSortOrderingRule>2.5.13.3</icfcldap:vlvSortOrderingRule>
+            <icfcldap:operationalAttributes>memberOf</icfcldap:operationalAttributes>
+            <icfcldap:operationalAttributes>createTimestamp</icfcldap:operationalAttributes>
+            <icfcldap:usePermissiveModify>always</icfcldap:usePermissiveModify>
+            <icfcldap:pagingStrategy>auto</icfcldap:pagingStrategy>
+        </icfc:configurationProperties>
+        <icfc:resultsHandlerConfiguration>
+            <icfc:enableNormalizingResultsHandler>false</icfc:enableNormalizingResultsHandler>
+            <icfc:enableFilteredResultsHandler>false</icfc:enableFilteredResultsHandler>
+            <icfc:enableAttributesToGetSearchResultsHandler>false</icfc:enableAttributesToGetSearchResultsHandler>
+        </icfc:resultsHandlerConfiguration>
+    </connectorConfiguration>
+
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <displayName>LDAP Account</displayName>
+            <default>true</default>
+            <delineation>
+                <objectClass>inetOrgPerson</objectClass>
+                <baseContext>
+                    <objectClass>organizationalUnit</objectClass>
+                    <filter>
+                        <q:text>dn = "ou=people,dc=example,dc=org"</q:text>
+                    </filter>
+                </baseContext>
+            </delineation>
+
+            <attribute>
+                <ref>dn</ref>
+                <displayName>Distinguished Name</displayName>
+                <limitations>
+                    <minOccurs>0</minOccurs>
+                    <maxOccurs>1</maxOccurs>
+                </limitations>
+                <outbound>
+                    <source>
+                        <path>$focus/name</path>
+                    </source>
+                    <expression>
+                        <script>
+                            <code>
+                                basic.composeDnWithSuffix('uid', name, 'ou=people,dc=example,dc=org')
+                            </code>
+                        </script>
+                    </expression>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>entryUUID</ref>
+                <displayName>Entry UUID</displayName>
+            </attribute>
+            <attribute>
+                <ref>uid</ref>
+                <displayName>UID</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>$focus/name</path>
+                    </source>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>cn</ref>
+                <displayName>Common Name</displayName>
+                <limitations>
+                    <minOccurs>0</minOccurs>
+                    <maxOccurs>1</maxOccurs>
+                </limitations>
+                <outbound>
+                    <source>
+                        <path>$focus/fullName</path>
+                    </source>
+                    <source>
+                        <path>$focus/name</path>
+                    </source>
+                    <expression>
+                        <script>
+                            <code>fullName ?: name</code>
+                        </script>
+                    </expression>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>sn</ref>
+                <displayName>Surname</displayName>
+                <outbound>
+                    <source>
+                        <path>$focus/familyName</path>
+                    </source>
+                    <source>
+                        <path>$focus/name</path>
+                    </source>
+                    <expression>
+                        <script>
+                            <code>familyName ?: name</code>
+                        </script>
+                    </expression>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>givenName</ref>
+                <displayName>Given Name</displayName>
+                <outbound>
+                    <source>
+                        <path>$focus/givenName</path>
+                    </source>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>mail</ref>
+                <displayName>E-mail</displayName>
+                <outbound>
+                    <source>
+                        <path>$focus/emailAddress</path>
+                    </source>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>memberOf</ref>
+                <fetchStrategy>explicit</fetchStrategy>
+            </attribute>
+
+            <association>
+                <ref>ri:group</ref>
+                <displayName>LDAP Group Membership</displayName>
+                <kind>entitlement</kind>
+                <intent>ldapGroup</intent>
+                <direction>objectToSubject</direction>
+                <associationAttribute>ri:member</associationAttribute>
+                <valueAttribute>ri:dn</valueAttribute>
+                <shortcutAssociationAttribute>ri:memberOf</shortcutAssociationAttribute>
+                <shortcutValueAttribute>ri:dn</shortcutValueAttribute>
+                <explicitReferentialIntegrity>true</explicitReferentialIntegrity>
+                <tolerant>false</tolerant>
+            </association>
+
+            <activation>
+                <administrativeStatus>
+                    <outbound/>
+                </administrativeStatus>
+            </activation>
+
+            <credentials>
+                <password>
+                    <outbound/>
+                </password>
+            </credentials>
+
+            <protected>
+                <filter>
+                    <q:text>attributes/dn endsWith "cn=admin,dc=example,dc=org"</q:text>
+                </filter>
+            </protected>
+            <protected>
+                <filter>
+                    <q:text>attributes/dn endsWith "cn=readonly,dc=example,dc=org"</q:text>
+                </filter>
+            </protected>
+        </objectType>
+
+        <objectType>
+            <kind>entitlement</kind>
+            <intent>ldapGroup</intent>
+            <displayName>LDAP Group</displayName>
+            <default>true</default>
+            <delineation>
+                <objectClass>groupOfNames</objectClass>
+                <baseContext>
+                    <objectClass>organizationalUnit</objectClass>
+                    <filter>
+                        <q:text>dn = "ou=groups,dc=example,dc=org"</q:text>
+                    </filter>
+                </baseContext>
+            </delineation>
+            <attribute>
+                <ref>dn</ref>
+                <outbound>
+                    <source>
+                        <path>$focus/name</path>
+                    </source>
+                    <expression>
+                        <script>
+                            <code>
+                                basic.composeDnWithSuffix('cn', name, 'ou=groups,dc=example,dc=org')
+                            </code>
+                        </script>
+                    </expression>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>cn</ref>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>$focus/name</path>
+                    </source>
+                </outbound>
+            </attribute>
+            <attribute>
+                <ref>description</ref>
+                <outbound>
+                    <source>
+                        <path>$focus/description</path>
+                    </source>
+                </outbound>
+            </attribute>
+            <attribute>
+                <!-- groupOfNames requires at least one member; keep admin as placeholder. -->
+                <ref>member</ref>
+                <outbound>
+                    <strength>weak</strength>
+                    <expression>
+                        <value>cn=admin,dc=example,dc=org</value>
+                    </expression>
+                </outbound>
+            </attribute>
+        </objectType>
+    </schemaHandling>
+</resource>

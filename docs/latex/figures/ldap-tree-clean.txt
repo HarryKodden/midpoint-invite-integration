@@ -1,0 +1,31 @@
+# example.org
+dn: dc=example,dc=org
+# readonly, example.org
+dn: cn=readonly,dc=example,dc=org
+cn: readonly
+# people, example.org
+dn: ou=people,dc=example,dc=org
+# groups, example.org
+dn: ou=groups,dc=example,dc=org
+# 3c7796d5-143d-4f6a-8534-7fcdc635ed5a@eduid.nl, people, example.org
+dn: uid=3c7796d5-143d-4f6a-8534-7fcdc635ed5a@eduid.nl,ou=people,dc=example,dc=
+uid: 3c7796d5-143d-4f6a-8534-7fcdc635ed5a@eduid.nl
+cn: Harry Kodden
+# midpoint-demo, groups, example.org
+dn: cn=midpoint-demo,ou=groups,dc=example,dc=org
+member: cn=admin,dc=example,dc=org
+member: uid=3c7796d5-143d-4f6a-8534-7fcdc635ed5a@eduid.nl,ou=people,dc=example
+cn: midpoint-demo
+# invite-scim-test-role, groups, example.org
+dn: cn=invite-scim-test-role,ou=groups,dc=example,dc=org
+member: cn=admin,dc=example,dc=org
+cn: invite-scim-test-role
+# invite-ui-test-role, groups, example.org
+dn: cn=invite-ui-test-role,ou=groups,dc=example,dc=org
+member: cn=admin,dc=example,dc=org
+cn: invite-ui-test-role
+# harry-test, groups, example.org
+dn: cn=harry-test,ou=groups,dc=example,dc=org
+member: cn=admin,dc=example,dc=org
+member: uid=3c7796d5-143d-4f6a-8534-7fcdc635ed5a@eduid.nl,ou=people,dc=example
+cn: harry-test

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Recompute application roles so LDAP groups are created/updated. -->
+<s:search xmlns:s="http://midpoint.evolveum.com/xml/ns/public/model/scripting-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3">
+    <s:type>c:RoleType</s:type>
+    <s:searchFilter>
+        <q:text>
+            name != "metarole-ldap-group"
+            and name != "Superuser"
+            and name != "End user"
+            and name != "Approver"
+            and name != "Reviewer"
+            and name != "Delegator"
+        </q:text>
+    </s:searchFilter>
+    <s:action>
+        <s:type>recompute</s:type>
+    </s:action>
+</s:search>

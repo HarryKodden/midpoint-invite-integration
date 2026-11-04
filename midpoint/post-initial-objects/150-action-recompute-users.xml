@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Recompute users so LDAP accounts/memberships are provisioned. -->
+<s:search xmlns:s="http://midpoint.evolveum.com/xml/ns/public/model/scripting-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3">
+    <s:type>c:UserType</s:type>
+    <s:action>
+        <s:type>recompute</s:type>
+    </s:action>
+</s:search>

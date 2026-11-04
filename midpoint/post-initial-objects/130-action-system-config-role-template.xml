@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Wire RoleType → template-role-ldap via defaultObjectPolicyConfiguration. -->
+<s:search xmlns:s="http://midpoint.evolveum.com/xml/ns/public/model/scripting-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3">
+    <s:type>c:SystemConfigurationType</s:type>
+    <s:action>
+        <s:type>modify</s:type>
+        <s:parameter>
+            <s:name>delta</s:name>
+            <c:value>
+                <s:itemDelta>
+                    <t:modificationType>add</t:modificationType>
+                    <t:path>defaultObjectPolicyConfiguration</t:path>
+                    <t:value>
+                        <type>c:RoleType</type>
+                        <objectTemplateRef oid="a1b2c3d4-e5f6-7890-abcd-ef1234567892"
+                                           type="c:ObjectTemplateType"/>
+                    </t:value>
+                </s:itemDelta>
+            </c:value>
+        </s:parameter>
+    </s:action>
+</s:search>

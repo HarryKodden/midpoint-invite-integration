@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Metarole: MidPoint Role → LDAP group; Role members → LDAP account + membership. -->
+<role oid="a1b2c3d4-e5f6-7890-abcd-ef1234567891"
+      xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      xmlns:org="http://midpoint.evolveum.com/xml/ns/public/common/org-3">
+
+    <name>metarole-ldap-group</name>
+    <description>
+        Assign this metarole to application/business roles. It creates a matching
+        groupOfNames in OpenLDAP and places role members into that group (and
+        creates their LDAP accounts if needed).
+    </description>
+
+    <!-- Applied to the Role that has this metarole: create LDAP group entitlement -->
+    <inducement>
+        <construction>
+            <resourceRef oid="a1b2c3d4-e5f6-7890-abcd-ef1234567890" type="c:ResourceType"/>
+            <kind>entitlement</kind>
+            <intent>ldapGroup</intent>
+        </construction>
+    </inducement>
+
+    <!-- Applied to Users who have that Role: LDAP account + group membership.
+         Strong association outbound so unassign removes the LDAP member even when
+         the account remains (other roles still induce the same account). -->
+    <inducement>
+        <construction>
+            <resourceRef oid="a1b2c3d4-e5f6-7890-abcd-ef1234567890" type="c:ResourceType"/>
+            <kind>account</kind>
+            <intent>default</intent>
+            <association>
+                <ref>ri:group</ref>
+                <outbound>
+                    <strength>strong</strength>
+                    <expression>
+                        <associationFromLink>
+                            <projectionDiscriminator>
+                                <kind>entitlement</kind>
+                                <intent>ldapGroup</intent>
+                            </projectionDiscriminator>
+                        </associationFromLink>
+                    </expression>
+                </outbound>
+            </association>
+        </construction>
+        <order>2</order>
+    </inducement>
+</role>

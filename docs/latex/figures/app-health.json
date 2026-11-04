@@ -1,0 +1,23 @@
+{
+    "lookup_backends": {
+        "ldap": {
+            "error": null,
+            "ready": true
+        },
+        "midpoint": {
+            "error": null,
+            "ready": true
+        },
+        "scim": {
+            "error": null,
+            "ready": true
+        }
+    },
+    "oidc_claims": null,
+    "oidc_ready": true,
+    "oidc_scope": "openid profile email",
+    "status": "ok",
+    "user_lookup_claims": [
+        "eduperson_principal_name"
+    ]
+}

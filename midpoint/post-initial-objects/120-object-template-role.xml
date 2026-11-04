@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Auto-assign metarole-ldap-group to application roles. -->
+<objectTemplate oid="a1b2c3d4-e5f6-7890-abcd-ef1234567892"
+                xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3">
+
+    <name>template-role-ldap</name>
+    <description>
+        Ensures application roles get LDAP group provisioning via metarole-ldap-group.
+    </description>
+
+    <mapping>
+        <name>assign-metarole-ldap-group</name>
+        <strength>weak</strength>
+        <expression>
+            <assignmentTargetSearch>
+                <targetType>c:RoleType</targetType>
+                <filter>
+                    <q:text>name = "metarole-ldap-group"</q:text>
+                </filter>
+            </assignmentTargetSearch>
+        </expression>
+        <target>
+            <path>assignment</path>
+        </target>
+        <condition>
+            <script>
+                <code>
+                    // On ADD, MidPoint also evaluates the (old) condition with focus == null.
+                    if (focus == null) {
+                        return false
+                    }
+                    def n = basic.stringify(focus.name)
+                    return n != 'metarole-ldap-group' &amp;&amp;
+                        !['Superuser','End user','Approver','Reviewer','Delegator'].contains(n)
+                </code>
+            </script>
+        </condition>
+    </mapping>
+</objectTemplate>

@@ -1,0 +1,155 @@
+services:
+  midpoint_data:
+    image: postgres:16-alpine
+    environment:
+     - POSTGRES_PASSWORD=db.secret.pw.007
+     - POSTGRES_USER=midpoint
+     - POSTGRES_INITDB_ARGS=--lc-collate=en_US.utf8 --lc-ctype=en_US.utf8
+    networks:
+     - net
+    volumes:
+     - midpoint_data:/var/lib/postgresql/data
+
+  data_init:
+    image: evolveum/midpoint:${MP_VER:-latest}-alpine
+    command: >
+      bash -c "
+      cd /opt/midpoint ;
+      bin/midpoint.sh init-native ;
+      echo ' - - - - - - ' ;
+      bin/ninja.sh -B info >/dev/null 2>/tmp/ninja.log ;
+      grep -q \"ERROR\" /tmp/ninja.log && (
+      bin/ninja.sh run-sql --create --mode REPOSITORY  ;
+      bin/ninja.sh run-sql --create --mode AUDIT
+      ) ||
+      echo -e '\\n Repository init is not needed...' ;
+      "
+    depends_on:
+     - midpoint_data
+    environment:
+     - MP_SET_midpoint_repository_jdbcUsername=midpoint
+     - MP_SET_midpoint_repository_jdbcPassword=db.secret.pw.007
+     - MP_SET_midpoint_repository_jdbcUrl=jdbc:postgresql://midpoint_data:5432/midpoint
+     - MP_SET_midpoint_repository_database=postgresql
+     - MP_INIT_CFG=/opt/midpoint/var
+    networks:
+     - net
+    volumes:
+     - midpoint_home:/opt/midpoint/var
+
+  midpoint_server:
+    image: evolveum/midpoint:${MP_VER:-latest}-alpine
+    depends_on:
+      data_init:
+        condition: service_completed_successfully
+      midpoint_data:
+        condition: service_started
+    command: [ "/opt/midpoint/bin/midpoint.sh", "container" ]
+    environment:
+     - MP_SET_midpoint_repository_jdbcUsername=midpoint
+     - MP_SET_midpoint_repository_jdbcPassword=db.secret.pw.007
+     - MP_SET_midpoint_repository_jdbcUrl=jdbc:postgresql://midpoint_data:5432/midpoint
+     - MP_SET_midpoint_repository_database=postgresql
+     - MP_UNSET_midpoint_repository_hibernateHbm2ddl=1
+     - MP_SET_midpoint_administrator_initialPassword=${MIDPOINT_ADMIN_INITIAL_PASSWORD}
+     - MP_NO_ENV_COMPAT=1
+     - MP_ENTRY_POINT=/opt/midpoint-entry
+    volumes:
+     - midpoint_home:/opt/midpoint/var
+     - ./midpoint:/opt/midpoint-entry:ro
+    networks:
+      net:
+        aliases:
+          - midpoint
+
+  scim:
+    build:
+      context: ../scim
+      # Build-only: Docker bridge DNS cannot resolve PyPI via NetBird.
+      network: host
+    depends_on:
+      midpoint_server:
+        condition: service_healthy
+    environment:
+     - LOGLEVEL=${SCIM_LOGLEVEL:-INFO}
+     - API_KEY=${SCIM_API_KEY:-secret}
+     - BASE_PATH=${SCIM_BASE_PATH:-/api/v2}
+     - MIDPOINT_URL=${MIDPOINT_URL:-http://midpoint:8080/midpoint/ws/rest}
+     - MIDPOINT_USERNAME=${MIDPOINT_USERNAME:-administrator}
+     - MIDPOINT_PASSWORD=${MIDPOINT_PASSWORD:-${MIDPOINT_ADMIN_INITIAL_PASSWORD}}
+     # MidPoint-leading: Invite SCIM Group create matches Role by name; Group DELETE is no-op
+     - MIDPOINT_LEADING_GROUPS=${MIDPOINT_LEADING_GROUPS:-true}
+     # Invite re-invite / re-accept: POST /Users with existing userName → reuse
+     - SCIM_IDEMPOTENT_USER_CREATE=${SCIM_IDEMPOTENT_USER_CREATE:-true}
+    networks:
+      - net
+
+  application:
+    build:
+      context: ./application
+      # Build-only: Docker bridge DNS cannot resolve PyPI via NetBird.
+      # Runtime access remains via Traefik (compose.traefik.yml).
+      network: host
+    depends_on:
+      midpoint_server:
+        condition: service_healthy
+      scim:
+        condition: service_started
+    # Invite/OIDC profile: ENV_FILE=.env.invite | .test.env (set in .env)
+    env_file:
+      - ${ENV_FILE:-.env.invite}
+    environment:
+     - FLASK_SECRET_KEY=${APP_FLASK_SECRET_KEY:-change-me}
+     - SESSION_COOKIE_SECURE=${APP_SESSION_COOKIE_SECURE:-false}
+     # OIDC_* / USER_LOOKUP_CLAIMS come from env_file (profile)
+     - OIDC_CLAIMS=${APP_OIDC_CLAIMS:-}
+     - MIDPOINT_URL=${MIDPOINT_URL:-http://midpoint:8080/midpoint/ws/rest}
+     - MIDPOINT_USERNAME=${MIDPOINT_USERNAME:-administrator}
+     - MIDPOINT_PASSWORD=${MIDPOINT_PASSWORD:-${MIDPOINT_ADMIN_INITIAL_PASSWORD}}
+     - SCIM_URL=${APP_SCIM_URL:-http://scim:8000/api/v2}
+     - SCIM_API_KEY=${SCIM_API_KEY:-secret}
+    networks:
+     - net
+
+  # MidPoint-leading: sync MidPoint Roles → SURF Invite Roles (external API).
+  # Also serves the MidPoint "Invite user" additionalMenuLink form.
+  invite_bridge:
+    build:
+      context: ./invite_bridge
+      # Build-only: Docker bridge DNS cannot resolve PyPI via NetBird.
+      # Runtime access remains via Traefik (compose.traefik.yml).
+      network: host
+    depends_on:
+      midpoint_server:
+        condition: service_healthy
+      scim:
+        condition: service_started
+    # Invite/OIDC profile: ENV_FILE=.env.invite | .test.env (set in .env)
+    # Profile supplies INVITE_* (incl. INVITE_BRIDGE_STATE) and must not be
+    # re-declared below — compose ${VAR} interpolation ignores env_file.
+    env_file:
+      - ${ENV_FILE:-.env.invite}
+    environment:
+      - LOGLEVEL=${INVITE_BRIDGE_LOGLEVEL:-INFO}
+      - INVITE_BRIDGE_HTTP_PORT=8080
+      - DOMAIN=${DOMAIN}
+      - INVITE_BRIDGE_PUBLIC_URL=${INVITE_BRIDGE_PUBLIC_URL:-https://invite-bridge.${DOMAIN}/invite}
+      - INVITE_BRIDGE_REGISTER_MENU=${INVITE_BRIDGE_REGISTER_MENU:-true}
+      - INVITE_BRIDGE_UI_USER=${INVITE_BRIDGE_UI_USER:-administrator}
+      - INVITE_BRIDGE_UI_PASSWORD=${INVITE_BRIDGE_UI_PASSWORD:-${MIDPOINT_ADMIN_INITIAL_PASSWORD}}
+      - MIDPOINT_URL=${MIDPOINT_URL:-http://midpoint:8080/midpoint/ws/rest}
+      - MIDPOINT_USERNAME=${MIDPOINT_USERNAME:-administrator}
+      - MIDPOINT_PASSWORD=${MIDPOINT_PASSWORD:-${MIDPOINT_ADMIN_INITIAL_PASSWORD}}
+    volumes:
+      - invite_bridge_data:/data
+    networks:
+      - net
+
+volumes:
+  midpoint_data:
+  midpoint_home:
+  invite_bridge_data:
+
+networks:
+  net:
+    driver: bridge

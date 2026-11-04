@@ -1,0 +1,58 @@
+services:
+  midpoint_server:
+    networks:
+      - external
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-external}"
+      - "traefik.http.routers.midpoint.rule=Host(`midpoint.${DOMAIN}`)"
+      - "traefik.http.routers.midpoint.entrypoints=https"
+      - "traefik.http.routers.midpoint.tls=true"
+      - "traefik.http.routers.midpoint.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-le}"
+      - "traefik.http.routers.midpoint.service=midpoint"
+      - "traefik.http.services.midpoint.loadbalancer.server.port=8080"
+      - "traefik.http.services.midpoint.loadbalancer.server.scheme=http"
+
+  scim:
+    networks:
+      - external
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-external}"
+      - "traefik.http.routers.scim.rule=Host(`scim.${DOMAIN}`)"
+      - "traefik.http.routers.scim.entrypoints=https"
+      - "traefik.http.routers.scim.tls=true"
+      - "traefik.http.routers.scim.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-le}"
+      - "traefik.http.routers.scim.service=scim"
+      - "traefik.http.services.scim.loadbalancer.server.port=8000"
+
+  application:
+    networks:
+      - external
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-external}"
+      - "traefik.http.routers.application.rule=Host(`app.${DOMAIN}`)"
+      - "traefik.http.routers.application.entrypoints=https"
+      - "traefik.http.routers.application.tls=true"
+      - "traefik.http.routers.application.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-le}"
+      - "traefik.http.routers.application.service=application"
+      - "traefik.http.services.application.loadbalancer.server.port=8000"
+
+  invite_bridge:
+    networks:
+      - external
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-external}"
+      - "traefik.http.routers.invite-bridge.rule=Host(`invite-bridge.${DOMAIN}`)"
+      - "traefik.http.routers.invite-bridge.entrypoints=https"
+      - "traefik.http.routers.invite-bridge.tls=true"
+      - "traefik.http.routers.invite-bridge.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-le}"
+      - "traefik.http.routers.invite-bridge.service=invite-bridge"
+      - "traefik.http.services.invite-bridge.loadbalancer.server.port=8080"
+
+networks:
+  external:
+    external: true
+    name: ${TRAEFIK_NETWORK:-external}
