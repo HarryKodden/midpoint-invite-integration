@@ -18,5 +18,8 @@ docs/latex/main.fls
 docs/latex/main.fdb_latexmk
 docs/latex/main.synctex.gz
 
-# Parked stacks (code may remain on disk; not part of default compose deposit)
-# ldap/ and moodle/ are still in-tree for experiments — do not ignore if present
+# Parked stacks (kept on disk locally; not in the GitHub deposit)
+ldap/
+moodle/
+moodle_bridge/
+postgres/init-moodle-db.sh
