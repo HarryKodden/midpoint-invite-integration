@@ -212,7 +212,6 @@ scripts/integration_membership_revoke.py
 application/                   # OIDC membership-pull demo (optional)
 midpoint/post-initial-objects/ # scimResource schema (+ parked LDAP XML)
 docs/latex/                    # this operator guide
-docs/scim-curl.md
 design.md                      # MidPoint-leading sequence (Mermaid)
 \end{lstlisting}
 
@@ -343,6 +342,31 @@ SCIM document & \texttt{extension/scimResource}
 \end{table}
 
 % =============================================================================
+\section{MidPoint GUI}
+\label{sec:midpoint-gui}
+% =============================================================================
+
+Administrators work primarily in the MidPoint web UI at
+\host{https://midpoint.\$DOMAIN/midpoint/}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth]{figures/midpoint-login.png}
+\caption{MidPoint GUI login
+  (\host{https://midpoint.\$DOMAIN/midpoint/login}).}
+\label{fig:midpoint-login}
+\end{figure}
+
+\paragraph{Roles and users.}
+Application roles created here are picked up by \texttt{invite\_bridge} and
+synced to Invite. After a successful sync the Role's \texttt{costCenter} is
+\texttt{invite:\{id\}}. When Invite echoes a SCIM Group, the Role also stores
+\texttt{extension/scimResource}. Invite-provisioned guests appear under
+\textbf{Users} after accept (SCIM \texttt{POST /Users}); memberships are
+MidPoint role assignments. See also Figures~\ref{fig:midpoint-invite-menu}
+and~\ref{fig:midpoint-users-menu} below.
+
+% =============================================================================
 \section{Invite user from MidPoint}
 \label{sec:invite-user-ui}
 % =============================================================================
@@ -449,13 +473,6 @@ know about a user.
 \includegraphics[width=0.92\textwidth]{figures/app-groups.png}
 \caption{Application --- Step 2: groups discovered from the selected backend.}
 \label{fig:app-groups}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.72\textwidth]{figures/midpoint-login.png}
-\caption{MidPoint GUI login at \host{midpoint.\$DOMAIN/midpoint/login}.}
-\label{fig:midpoint-login}
 \end{figure}
 
 \subsection{Health endpoint}

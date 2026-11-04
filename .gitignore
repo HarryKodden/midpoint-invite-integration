@@ -23,3 +23,6 @@ ldap/
 moodle/
 moodle_bridge/
 postgres/init-moodle-db.sh
+
+# SCIM curl scratch/examples (local only)
+docs/scim-curl.md

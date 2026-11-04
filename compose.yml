@@ -63,10 +63,9 @@ services:
           - midpoint
 
   scim:
-    build:
-      context: ../scim
-      # Build-only: Docker bridge DNS cannot resolve PyPI via NetBird.
-      network: host
+    # Published image: https://hub.docker.com/r/harrykodden/scim
+    # Override with SCIM_IMAGE=… or build locally: comment image, restore build context ../scim
+    image: ${SCIM_IMAGE:-harrykodden/scim:latest}
     depends_on:
       midpoint_server:
         condition: service_healthy

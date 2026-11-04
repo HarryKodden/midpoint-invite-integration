@@ -37,8 +37,8 @@ Custom code for this integration:
 | Piece | Location | Purpose |
 |-------|----------|---------|
 | **`invite_bridge/`** | this repo | MidPoint Roles → Invite `POST/DELETE /roles`; membership revoke → `by_provisioned_scim`; Invite-user form; store `costCenter=invite:{id}` |
-| **SCIM MidPoint plugin leading mode** | sibling [`../scim`](../scim) `code/data/plugins/midpoint.py` | `MIDPOINT_LEADING_GROUPS=true`: reuse Role by name on Group create; no-op Group DELETE; ignore empty `members:[]`; synthesize missing `meta` on read |
-| **SCIM idempotent User create** | [`../scim`](../scim) `code/routers/users.py` | `SCIM_IDEMPOTENT_USER_CREATE`: re-POST same `userName`/`externalId` reuses existing User (avoids 409 on Invite re-provision) |
+| **SCIM MidPoint plugin leading mode** | image [`harrykodden/scim`](https://hub.docker.com/r/harrykodden/scim) | `MIDPOINT_LEADING_GROUPS=true`: reuse Role by name on Group create; no-op Group DELETE; ignore empty `members:[]`; synthesize missing `meta` on read |
+| **SCIM idempotent User create** | same image | `SCIM_IDEMPOTENT_USER_CREATE`: re-POST same `userName`/`externalId` reuses existing User (avoids 409 on Invite re-provision) |
 | **Manual helper (optional)** | `scripts/invite-create-role.sh` | One-shot Invite Role create with curl |
 | **Live revoke smoke (optional)** | `scripts/integration_membership_revoke.py` | MidPoint unassign → Invite `by_provisioned_scim` against a running stack |
 
@@ -61,7 +61,7 @@ Local MidPoint revoke always wins if Invite notify fails (logged/alert).
 | Service | Role |
 |---------|------|
 | MidPoint + Postgres | IDM; Roles, Users, assignments |
-| `scim` | Institutional SCIM → MidPoint REST (`../scim`) |
+| `scim` | Institutional SCIM → MidPoint REST (`harrykodden/scim` image; override `SCIM_IMAGE`) |
 | `invite_bridge` | MidPoint Roles ↔ Invite API; membership drift prevention; Invite-user form |
 | `application` | OIDC demo; membership pull (MidPoint / SCIM) |
 
@@ -76,7 +76,6 @@ scripts/invite-create-role.sh
 scripts/integration_membership_revoke.py
 application/                   # OIDC membership-pull demo
 midpoint/post-initial-objects/ # scimResource schema (+ parked LDAP objects)
-docs/scim-curl.md
 docs/latex/                    # architecture PDF (make -C docs/latex pdf)
 design.md                      # MidPoint-leading sequence (Mermaid)
 TODO.md                        # remaining / parked notes
@@ -119,10 +118,11 @@ docker compose -f compose.yml -f compose.traefik.yml up -d --force-recreate --no
 
 Profiles use separate `INVITE_BRIDGE_STATE` paths so Invite role id links do not mix.
 
-Rebuild after Python/SCIM changes:
+Pull / recreate SCIM after publishing a new `harrykodden/scim` image:
 
 ```bash
-docker compose -f compose.yml -f compose.traefik.yml up -d --build scim invite_bridge
+docker pull ${SCIM_IMAGE:-harrykodden/scim:latest}
+docker compose -f compose.yml -f compose.traefik.yml up -d --force-recreate --no-deps scim
 ```
 
 ## Configuration (Invite core)
