@@ -11,7 +11,7 @@
 - [x] SCIM `MIDPOINT_LEADING_GROUPS`: Group create by name; Group DELETE no-op; empty members ignored
 - [x] SCIM idempotent User create (`SCIM_IDEMPOTENT_USER_CREATE`)
 - [x] Compose + `INVITE_*` / `.env.example` / profile toggle (`.env.invite` | `.test.env`)
-- [x] README + `design.puml` + LaTeX operator guide for MidPoint-leading
+- [x] README + `design.md` (Mermaid) + LaTeX operator guide for MidPoint-leading
 - [x] Manual `scripts/invite-create-role.sh`
 - [x] MidPoint **Invite user** menu link → `invite_bridge` form → Invite `POST /invitations`
 - [x] MidPoint admin **unassign Invite-SCIM member** → Invite

@@ -1,9 +1,0 @@
-# Organizational units only. Users and groups are provisioned by MidPoint.
-
-dn: ou=people,dc=example,dc=org
-objectClass: organizationalUnit
-ou: people
-
-dn: ou=groups,dc=example,dc=org
-objectClass: organizationalUnit
-ou: groups
