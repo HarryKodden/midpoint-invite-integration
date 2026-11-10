@@ -274,7 +274,7 @@ seed apps), Invite can push Users/memberships (and Group echoes) to SCIM.
     MidPoint administrator creates an application Role.
     \texttt{invite\_bridge} polls MidPoint and calls Invite
     \texttt{POST /api/external/v1/roles}, then stores
-    \texttt{costCenter=invite:\{id\}} on the MidPoint Role.
+    \texttt{extension/inviteRoleId=\{id\}} on the MidPoint Role.
     Invite may echo \texttt{POST /Groups} to SCIM; with
     \texttt{MIDPOINT\_LEADING\_GROUPS} the plugin reuses the existing Role by
     name (no duplicate).
@@ -359,8 +359,8 @@ Administrators work primarily in the MidPoint web UI at
 
 \paragraph{Roles and users.}
 Application roles created here are picked up by \texttt{invite\_bridge} and
-synced to Invite. After a successful sync the Role's \texttt{costCenter} is
-\texttt{invite:\{id\}}. When Invite echoes a SCIM Group, the Role also stores
+synced to Invite. After a successful sync the Role's \texttt{extension/inviteRoleId}
+is \texttt{\{id\}}. When Invite echoes a SCIM Group, the Role also stores
 \texttt{extension/scimResource}. Invite-provisioned guests appear under
 \textbf{Users} after accept (SCIM \texttt{POST /Users}); memberships are
 MidPoint role assignments. See also Figures~\ref{fig:midpoint-invite-menu}
@@ -390,7 +390,7 @@ Invite application. The \texttt{invite\_bridge} service:
 The form lists only MidPoint Roles that Invite has already SCIM-provisioned
 (they carry \texttt{extension/scimResource}, or legacy SCIM JSON in
 \texttt{description}) and that have an Invite role id
-(\texttt{costCenter=invite:\{id\}}). Roles that exist only in MidPoint, or only
+(\texttt{extension/inviteRoleId}). Roles that exist only in MidPoint, or only
 in Invite without a SCIM echo, are omitted.
 
 \begin{figure}[H]

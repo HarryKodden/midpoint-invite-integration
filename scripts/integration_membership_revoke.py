@@ -185,9 +185,7 @@ def main() -> int:
             f"SKIP: MidPoint role {KNOWN_GROUP_SCIM} missing or not SCIM-managed"
         )
         return 2
-    if known.get(KNOWN_GROUP_SCIM) is None and bridge._invite_id_from_cost_center(
-        role.get("costCenter")
-    ) is None:
+    if known.get(KNOWN_GROUP_SCIM) is None and bridge._invite_id_from_object(role) is None:
         _log("SKIP: MidPoint role not Invite-linked")
         return 2
 

@@ -53,6 +53,21 @@ def _user(oid: str, *, scim_id: str | None = None, local: bool = False) -> dict:
     return user
 
 
+class InviteIdResolutionTests(unittest.TestCase):
+    def test_extension_attr_is_preferred(self) -> None:
+        role = _role("role-1", "demo", invite_id=16)
+        role["extension"] = {"inviteRoleId": "42"}
+        self.assertEqual(bridge._invite_id_from_object(role), 42)
+
+    def test_cost_center_is_legacy_fallback(self) -> None:
+        role = _role("role-1", "demo", invite_id=16)
+        self.assertEqual(bridge._invite_id_from_object(role), 16)
+
+    def test_no_link_returns_none(self) -> None:
+        role = _role("role-1", "demo", invite_id=None)
+        self.assertIsNone(bridge._invite_id_from_object(role))
+
+
 class ScimDetectionTests(unittest.TestCase):
     def test_role_and_user_scim_ids(self) -> None:
         role = _role("role-1", "demo", scim_id="group-scim-1")

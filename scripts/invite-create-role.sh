@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create a SURF Invite role via the external API (manual MidPoint-leading step).
+# Create an OpenConext Invite role via the external API (manual MidPoint-leading step).
 #
 # Usage:
 #   ./scripts/invite-create-role.sh [role-name]

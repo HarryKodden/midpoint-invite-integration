@@ -36,7 +36,7 @@ Custom code for this integration:
 
 | Piece | Location | Purpose |
 |-------|----------|---------|
-| **`invite_bridge/`** | this repo | MidPoint Roles → Invite `POST/DELETE /roles`; membership revoke → `by_provisioned_scim`; Invite-user form; store `costCenter=invite:{id}` |
+| **`invite_bridge/`** | this repo | MidPoint Roles → Invite `POST/DELETE /roles`; membership revoke → `by_provisioned_scim`; Invite-user form; store `extension/inviteRoleId` |
 | **SCIM MidPoint plugin leading mode** | image [`harrykodden/scim`](https://hub.docker.com/r/harrykodden/scim) | `MIDPOINT_LEADING_GROUPS=true`: reuse Role by name on Group create; no-op Group DELETE; ignore empty `members:[]`; synthesize missing `meta` on read |
 | **SCIM idempotent User create** | same image | `SCIM_IDEMPOTENT_USER_CREATE`: re-POST same `userName`/`externalId` reuses existing User (avoids 409 on Invite re-provision) |
 | **Manual helper (optional)** | `scripts/invite-create-role.sh` | One-shot Invite Role create with curl |
@@ -104,7 +104,7 @@ selected by `ENV_FILE` in `.env`:
 | `ENV_FILE` | Use |
 |------------|-----|
 | `.env.invite` | Current shared `invite.test` setup (default) |
-| `.test.env` | Your private Invite / SURFconext (retries without touching the shared tenant) |
+| `.test.env` | Your private OpenConext Invite profile (retries without touching the shared tenant) |
 
 ```bash
 # Use private Invite
@@ -137,7 +137,7 @@ docker compose -f compose.yml -f compose.traefik.yml up -d --force-recreate --no
 | `INVITE_APPLICATION_MANAGE_ID` | Manage entity id of the SP/RP that has the SCIM provisioner |
 | `INVITE_APPLICATION_MANAGE_TYPE` | **Uppercase** enum: `SAML20_SP` \| `OIDC10_RP` \| … |
 | `INVITE_APPLICATION_LANDING_PAGE` | Landing URL stored on the Invite Role |
-| `INVITE_BRIDGE_SYNC_INTERVAL` | Poll interval seconds (default 30) |
+| `SYNC_INTERVAL_SECONDS` | Poll interval seconds (default 30) |
 | `INVITE_BRIDGE_SYNC_MEMBERSHIPS` | Notify Invite on MidPoint membership revoke (default `true`) |
 | `INVITE_BRIDGE_MEMBERSHIPS_STATE` | Snapshot path (default: `*_memberships.json` beside `INVITE_BRIDGE_STATE`) |
 | `INVITE_CREATE_FAIL_MAX_ATTEMPTS` | Max Invite role-create tries per MidPoint Role before giving up until bridge restart (default `1`) |
@@ -181,18 +181,18 @@ Invite’s Manage SCIM provisioner should target `https://scim.${DOMAIN}/api/v2`
 - `MIDPOINT_ADMIN_INITIAL_PASSWORD` — initial admin password (also default REST password)
 - Application Roles created in MidPoint GUI are picked up by `invite_bridge` (system roles / `metarole-*` skipped)
 
-Link to Invite is stored on the Role as `costCenter = invite:{numericId}` (demo convenience; a proper extension attribute is preferable for production).
+Link to Invite is stored on the Role as `extension/inviteRoleId = {numericId}` (roles linked by older bridge versions used `costCenter = invite:{id}`, still read as a fallback).
 
 ## Behaviour
 
 ### 1. Create Role (MidPoint → Invite)
 
 1. Administrator creates an application Role in MidPoint.
-2. Within ~`INVITE_BRIDGE_SYNC_INTERVAL` seconds, `invite_bridge` calls
+2. Within ~`SYNC_INTERVAL_SECONDS` seconds, `invite_bridge` calls
    `POST /api/external/v1/roles` with the same name and configured Manage application.
 3. Invite may `POST /Groups` to SCIM; with `MIDPOINT_LEADING_GROUPS` the plugin
    binds to the existing MidPoint Role by `displayName` (no second Role).
-4. Bridge writes `costCenter=invite:{id}` on the MidPoint Role.
+4. Bridge writes `extension/inviteRoleId={id}` on the MidPoint Role.
 
 ### 2. Invite users / accept (Invite → SCIM → MidPoint)
 
@@ -222,7 +222,7 @@ Invite remains source of truth for guest memberships it provisioned. If a
 MidPoint admin removes such a membership locally without telling Invite, VOOT/AA
 and app access diverge. On each poll the bridge:
 
-1. Watches MidPoint Roles that are **Invite-linked** (`costCenter=invite:…`)
+1. Watches MidPoint Roles that are **Invite-linked** (`extension/inviteRoleId`)
    **and** SCIM-provisioned (`extension/scimResource`).
 2. Tracks only **Invite-SCIM Users** on those roles (users with `scimResource`).
    Purely local MidPoint users/roles never trigger Invite calls.
@@ -241,8 +241,8 @@ Group-delete API for SP-side cleanup.
 
 Cold start with an empty membership snapshot only baselines; it does not mass-revoke.
 
-Unit tests: `python -m unittest invite_bridge/test_membership_sync.py` (from a
-venv with `invite_bridge/requirements.txt`).
+Unit tests: `cd invite_bridge && python -m unittest test_membership_sync.py -v`
+(from a venv with `invite_bridge/requirements.txt`).
 
 ### 5. Demo app
 
@@ -298,7 +298,7 @@ sequenceDiagram
     IDM-->>Bridge: New Role
     Bridge->>Invite: POST /api/external/v1/roles
     Invite-->>Bridge: 200 (Invite role id)
-    Bridge->>IDM: Store costCenter=invite:{id}
+    Bridge->>IDM: Store extension inviteRoleId
     Invite->>SCIM: POST /Groups (echo)
     SCIM->>IDM: Match Role by name (MIDPOINT_LEADING_GROUPS)
     IDM-->>SCIM: OK

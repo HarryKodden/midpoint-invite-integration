@@ -27,7 +27,7 @@ sequenceDiagram
     IDM-->>Bridge: New Role
     Bridge->>Invite: POST /api/external/v1/roles
     Invite-->>Bridge: 200 (Invite role id)
-    Bridge->>IDM: Store costCenter=invite:{id}
+    Bridge->>IDM: Store extension inviteRoleId
     Invite->>SCIM: POST /Groups (echo)
     SCIM->>IDM: Match Role by name (MIDPOINT_LEADING_GROUPS)
     IDM-->>SCIM: OK
