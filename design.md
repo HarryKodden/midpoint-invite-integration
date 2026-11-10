@@ -1,4 +1,4 @@
-# MidPoint ↔ SURF Invite — sequence
+# MidPoint ↔ OpenConext Invite — sequence
 
 MidPoint-leading: MidPoint owns Role create/delete; Invite owns invitation UX;
 users and memberships enter MidPoint via SCIM. MidPoint unassign of Invite-SCIM
@@ -11,7 +11,7 @@ sequenceDiagram
     actor Guest as Guest
     participant IDM as MidPoint (IDM/IGA)
     participant Bridge as invite_bridge
-    participant Invite as SURF Invite
+    participant Invite as OpenConext Invite
     participant SCIM as Institutional SCIM
     participant Mail as Mail
     participant Auth as SURFconext / eduID
@@ -27,7 +27,7 @@ sequenceDiagram
     IDM-->>Bridge: New Role
     Bridge->>Invite: POST /api/external/v1/roles
     Invite-->>Bridge: 200 (Invite role id)
-    Bridge->>IDM: Store costCenter=invite:{id}
+    Bridge->>IDM: Store extension inviteRoleId
     Invite->>SCIM: POST /Groups (echo)
     SCIM->>IDM: Match Role by name (MIDPOINT_LEADING_GROUPS)
     IDM-->>SCIM: OK

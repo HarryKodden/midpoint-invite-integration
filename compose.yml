@@ -110,7 +110,7 @@ services:
     networks:
      - net
 
-  # MidPoint-leading: sync MidPoint Roles → SURF Invite Roles (external API).
+  # MidPoint-leading: sync MidPoint Roles → OpenConext Invite Roles (external API).
   # Also serves the MidPoint "Invite user" additionalMenuLink form.
   invite_bridge:
     build:
