@@ -28,7 +28,7 @@
   linkcolor=black!70!blue,
   urlcolor=black!70!blue,
   citecolor=black!70!blue,
-  pdftitle={SURF Invite -- MidPoint Integration (MidPoint-leading)},
+  pdftitle={OpenConext Invite -- MidPoint Integration (MidPoint-leading)},
   pdfauthor={MidPoint Invite Integration}
 }
 
@@ -68,7 +68,7 @@
 
 % --- Document -----------------------------------------------------------------
 \title{%
-  SURF Invite -- MidPoint Integration\\
+  OpenConext Invite -- MidPoint Integration\\
   \large MidPoint-leading reference architecture and operator guide
 }
 \author{Reference implementation\\(\texttt{midpoint-invite-integration}, branch \texttt{midpoint-leading})}
@@ -79,7 +79,7 @@
 
 \begin{abstract}
 This document describes a reference stack that integrates
-\textbf{SURFconext Invite} with \textbf{MidPoint}.
+\textbf{OpenConext Invite} with \textbf{MidPoint}.
 \textbf{MidPoint is the system of record for roles/groups}: an
 \texttt{invite\_bridge} service creates and deletes matching Roles in Invite
 via the Invite external API, and notifies Invite when a MidPoint administrator
@@ -104,7 +104,7 @@ The reference answers three practical questions:
 
 \begin{enumerate}[leftmargin=*]
   \item How can an institution create roles in \textbf{MidPoint} and have them
-        appear automatically in \textbf{SURF Invite} for invitation workflows?
+        appear automatically in \textbf{OpenConext Invite} for invitation workflows?
   \item How can a MidPoint administrator \textbf{invite a guest} without leaving
         MidPoint, while still using Invite's invitation email and accept flow?
   \item How do invited guests still land in MidPoint as users with role
@@ -142,7 +142,7 @@ MidPoint + Postgres & IDM/IGA; SoR for Roles; users, assignments &
 \texttt{invite\_bridge} & MidPoint Roles $\leftrightarrow$ Invite API;
   membership revoke notify; \textbf{Invite user} form &
   \host{invite-bridge.\$DOMAIN} \\
-SURF Invite & Invitation UX; SCIM client for Users/memberships & (external) \\
+OpenConext Invite & Invitation UX; SCIM client for Users/memberships & (external) \\
 SCIM service & Institutional SCIM API $\rightarrow$ MidPoint REST &
   \host{scim.\$DOMAIN} \\
 OIDC Application & Optional membership-pull demo &
@@ -171,7 +171,7 @@ SURFconext / eduID & OIDC authentication & (external) \\
   \node[ext, right=4.2cm of inviter] (guest) {Guest\\(identity)};
 
   % External services
-  \node[ext, below=0.85cm of inviter] (invite) {SURF Invite};
+  \node[ext, below=0.85cm of inviter] (invite) {OpenConext Invite};
   \node[ext, below=0.85cm of guest] (op) {SURFconext\\/ eduID};
 
   % Compose stack
@@ -231,7 +231,7 @@ repository \texttt{design.md} Mermaid diagram; PNG checked in for PDF builds).
 \label{fig:invite-sequence}
 \end{figure}
 
-\subsection{SURF Invite provisioner configuration}
+\subsection{OpenConext Invite provisioner configuration}
 \label{sec:invite-provisioner}
 
 Before Invite can drive MidPoint, the institutional SCIM endpoint must be
@@ -532,7 +532,7 @@ Assuming \texttt{DOMAIN=pilot1.sram.surf.nl}:
   \item Invite user form: \url{https://invite-bridge.pilot1.sram.surf.nl/invite}
 \end{itemize}
 
-Configure the SURF Invite SCIM provisioner as described in
+Configure the OpenConext Invite SCIM provisioner as described in
 Section~\ref{sec:invite-provisioner} (Figure~\ref{fig:manage-provisioner}),
 and configure \texttt{INVITE\_*} for \texttt{invite\_bridge} (see repository
 \texttt{README.md}). Invite must use remote Manage so application metadata and

@@ -1,7 +1,7 @@
-# MidPoint ↔ SURF Invite integration (reference)
+# MidPoint ↔ OpenConext Invite integration (reference)
 
 Reference implementation of a **MidPoint-leading** integration with
-[SURFconext Invite](https://openconext.github.io/OpenConext-Invite/): MidPoint is
+[OpenConext Invite](https://openconext.github.io/OpenConext-Invite/): MidPoint is
 the system of record for **roles/groups**; Invite owns the **invitation UX**;
 users and memberships flow into MidPoint over **SCIM 2.0**.
 
@@ -103,7 +103,7 @@ selected by `ENV_FILE` in `.env`:
 
 | `ENV_FILE` | Use |
 |------------|-----|
-| `.env.invite` | Current SURF `invite.test` setup (default) |
+| `.env.invite` | Current shared `invite.test` setup (default) |
 | `.test.env` | Your private Invite / SURFconext (retries without touching the shared tenant) |
 
 ```bash
@@ -282,7 +282,7 @@ sequenceDiagram
     actor Guest as Guest
     participant IDM as MidPoint (IDM/IGA)
     participant Bridge as invite_bridge
-    participant Invite as SURF Invite
+    participant Invite as OpenConext Invite
     participant SCIM as Institutional SCIM
     participant Mail as Mail
     participant Auth as SURFconext / eduID
