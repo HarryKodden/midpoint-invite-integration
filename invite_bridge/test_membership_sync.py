@@ -253,5 +253,45 @@ class MembershipSyncTests(unittest.TestCase):
         self.assertEqual(memberships["role-oid"], {})
 
 
+class InviteFormErrorTests(unittest.TestCase):
+    def _client(self, mp, invite):
+        import threading
+
+        app = bridge.create_app(mp, invite, {}, threading.Lock())
+        return app.test_client()
+
+    def test_get_invite_midpoint_down_returns_503_without_traceback(self) -> None:
+        mp = MagicMock()
+        mp.list_roles.side_effect = RuntimeError("MidPoint GET /roles/search → 500: internal detail")
+        client = self._client(mp, MagicMock())
+
+        resp = client.get("/invite")
+
+        self.assertEqual(resp.status_code, 503)
+        self.assertNotIn(b"Traceback", resp.data)
+        self.assertNotIn(b"internal detail", resp.data)
+        self.assertIn(b"Could not reach MidPoint", resp.data)
+
+    def test_post_invite_upstream_error_returns_502_generic_message(self) -> None:
+        role = _role("role-oid", "e2e-demo", invite_id=16, scim_id="group-scim")
+        mp = MagicMock()
+        mp.list_roles.return_value = [role]
+        invite = MagicMock()
+        invite.create_invitation.side_effect = RuntimeError(
+            "Invite POST /invitations → 500: secret upstream detail"
+        )
+        client = self._client(mp, invite)
+
+        resp = client.post(
+            "/invite",
+            data={"email": "guest@example.org", "role_id": "16", "expiry_days": "14"},
+        )
+
+        self.assertEqual(resp.status_code, 502)
+        self.assertNotIn(b"Traceback", resp.data)
+        self.assertNotIn(b"secret upstream detail", resp.data)
+        self.assertIn(b"details are in the invite_bridge logs", resp.data)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1109,7 +1109,14 @@ def create_app(
     def invite_form():
         with known_lock:
             known_snapshot = dict(known)
-        roles = _linked_invite_roles(mp, known_snapshot)
+        try:
+            roles = _linked_invite_roles(mp, known_snapshot)
+        except Exception:
+            logger.exception("Failed to list Invite-linked roles from MidPoint")
+            return _render_page(
+                roles=[],
+                error="Could not reach MidPoint to list roles; try again later.",
+            ), 503
 
         values = {
             "email": "",
@@ -1181,10 +1188,12 @@ def create_app(
                 guest_role_included=values["guest_role_included"] == "1",
                 expiry_days=expiry_days,
             )
-        except Exception as exc:
+        except Exception:
             logger.exception("Invitation failed for %s", email)
             return _render_page(
-                roles=roles, error=str(exc), values=values
+                roles=roles,
+                error="Invitation failed; details are in the invite_bridge logs.",
+                values=values,
             ), 502
 
         urls = result.get("recipientInvitationURLs") or []
