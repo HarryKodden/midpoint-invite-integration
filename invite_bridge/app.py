@@ -1,4 +1,4 @@
-"""Sync MidPoint application Roles → SURF Invite Roles (MidPoint-leading),
+"""Sync MidPoint application Roles → OpenConext Invite Roles (MidPoint-leading),
 and serve a simple "Invite user" form linked from the MidPoint admin menu.
 
 On each sync cycle:
@@ -8,7 +8,9 @@ On each sync cycle:
     → DELETE /api/external/v1/user_roles/by_provisioned_scim/{userId}/{groupId}
     (drift prevention; local revoke always wins if Invite notify fails)
 
-Invite role id is stored on the MidPoint Role as costCenter = ``invite:{id}``.
+Invite role id is stored on the MidPoint Role as extension ``inviteRoleId``
+(roles linked by older bridge versions used ``costCenter = invite:{id}``, still
+read as a fallback).
 
 HTTP (Flask):
   GET/POST /invite  — form that calls Invite POST /invitations
@@ -50,6 +52,8 @@ SYSTEM_ROLE_NAMES = {
 }
 
 COST_CENTER_PREFIX = "invite:"
+# Extension attribute holding the Invite role id (preferred over costCenter).
+INVITE_ROLE_ID_ATTR = os.environ.get("MIDPOINT_INVITE_ROLE_ID_ATTR", "inviteRoleId")
 SYSTEM_CONFIG_OID = "00000000-0000-0000-0000-000000000001"
 # Limit Invite role-create retries per MidPoint Role oid (in-memory; cleared on
 # bridge restart). Default: one failed create, then no further attempts.
@@ -99,6 +103,19 @@ def _invite_id_from_cost_center(value: Any) -> int | None:
         return int(raw)
     except ValueError:
         return None
+
+
+def _invite_id_from_object(obj: dict) -> int | None:
+    """Invite role id from extension ``inviteRoleId``, legacy costCenter fallback."""
+    raw = _extension_item_value(obj.get("extension"), INVITE_ROLE_ID_ATTR, SCIM_DETAILS_NS)
+    if isinstance(raw, bool):
+        raw = None
+    if isinstance(raw, int):
+        return raw
+    text = _poly_name(raw) if not isinstance(raw, str) else raw
+    if text and str(text).strip().isdigit():
+        return int(str(text).strip())
+    return _invite_id_from_cost_center(obj.get("costCenter"))
 
 
 def _extension_item_value(extension: Any, attr: str, ns: str) -> Any:
@@ -226,13 +243,17 @@ class MidPointClient:
                     "itemDelta": [
                         {
                             "modificationType": "replace",
-                            "path": "costCenter",
-                            "value": f"{COST_CENTER_PREFIX}{invite_role_id}",
+                            "path": f"extension/{INVITE_ROLE_ID_ATTR}",
+                            "value": str(invite_role_id),
                         }
                     ]
                 }
             },
         )
+
+    def ping(self) -> None:
+        """Raise if MidPoint REST is unreachable."""
+        self.get_system_configuration()
 
     def get_system_configuration(self) -> dict:
         body = self._request(
@@ -253,7 +274,7 @@ class MidPointClient:
             "targetUrl": target_url,
             "label": label,
             "description": (
-                "Create a SURF Invite invitation "
+                "Create an OpenConext Invite invitation "
                 "(does not create a MidPoint user yet)"
             ),
         }
@@ -342,6 +363,14 @@ class InviteClient:
                 f"Invite {method} {path} → {response.status_code}: {response.text[:800]}"
             )
         return response
+
+    def ping(self) -> None:
+        """Raise if the Invite API is unreachable."""
+        self._request(
+            "GET",
+            "/roles",
+            params={"force": "false", "pageNumber": 0, "pageSize": 1},
+        )
 
     def find_role_by_name(self, name: str) -> dict | None:
         # Search API is paginated; query filters server-side.
@@ -517,7 +546,7 @@ def sync_once(
             continue
 
         seen_oids.add(oid)
-        invite_id = _invite_id_from_cost_center(role.get("costCenter"))
+        invite_id = _invite_id_from_object(role)
         if invite_id is None:
             invite_id = known.get(oid)
 
@@ -610,7 +639,8 @@ def sync_once(
             mp.set_invite_link(oid, invite_id)
         except Exception:
             logger.exception(
-                "Created Invite role %s but failed to set MidPoint costCenter on %s",
+                "Created Invite role %s but failed to set MidPoint extension %s on %s",
+                INVITE_ROLE_ID_ATTR,
                 invite_id,
                 oid,
             )
@@ -704,7 +734,7 @@ def _invite_managed_roles(
             continue
         if not _role_has_scim_resource(role):
             continue
-        invite_id = _invite_id_from_cost_center(role.get("costCenter")) or known.get(oid)
+        invite_id = _invite_id_from_object(role) or known.get(oid)
         if invite_id is None:
             continue
         managed.append(role)
@@ -817,7 +847,7 @@ def _linked_invite_roles(mp: MidPointClient, known: dict[str, int]) -> list[dict
 
     Only MidPoint Roles that Invite has already SCIM-provisioned (stored
     ``extension/scimResource``, or legacy SCIM JSON in ``description``) and that
-    have an Invite role id (``costCenter=invite:…`` or bridge state).
+    have an Invite role id (``extension/inviteRoleId`` or bridge state).
     """
     by_id: dict[int, str] = {}
     for role in mp.list_roles():
@@ -827,7 +857,7 @@ def _linked_invite_roles(mp: MidPointClient, known: dict[str, int]) -> list[dict
             continue
         if not _role_has_scim_resource(role):
             continue
-        invite_id = _invite_id_from_cost_center(role.get("costCenter")) or known.get(oid)
+        invite_id = _invite_id_from_object(role) or known.get(oid)
         if invite_id is None:
             logger.debug(
                 "Role %s has SCIM resource but no Invite id yet — omitted from form",
@@ -957,7 +987,7 @@ def _render_page(
   <main>
     <h1>Invite user</h1>
     <p class="lead">
-      Sends a SURF Invite invitation by email. No MidPoint user is created until
+      Sends an OpenConext Invite invitation by email. No MidPoint user is created until
       the invitee accepts and Invite provisions via SCIM.
     </p>
     {err_html}
@@ -1054,7 +1084,21 @@ def create_app(
 
     @app.get("/health")
     def health():
-        return {"status": "ok"}, 200
+        checks: dict[str, str] = {}
+        try:
+            mp.ping()
+            checks["midpoint"] = "ok"
+        except Exception as exc:
+            checks["midpoint"] = f"unreachable: {exc}"
+        try:
+            invite.ping()
+            checks["invite"] = "ok"
+        except Exception as exc:
+            checks["invite"] = f"unreachable: {exc}"
+        ok = all(value == "ok" for value in checks.values())
+        return {"status": "ok" if ok else "degraded", "checks": checks}, (
+            200 if ok else 503
+        )
 
     @app.get("/")
     def root():
@@ -1064,7 +1108,15 @@ def create_app(
     @require_ui_auth
     def invite_form():
         with known_lock:
-            roles = _linked_invite_roles(mp, known)
+            known_snapshot = dict(known)
+        try:
+            roles = _linked_invite_roles(mp, known_snapshot)
+        except Exception:
+            logger.exception("Failed to list Invite-linked roles from MidPoint")
+            return _render_page(
+                roles=[],
+                error="Could not reach MidPoint to list roles; try again later.",
+            ), 503
 
         values = {
             "email": "",
@@ -1136,10 +1188,12 @@ def create_app(
                 guest_role_included=values["guest_role_included"] == "1",
                 expiry_days=expiry_days,
             )
-        except Exception as exc:
+        except Exception:
             logger.exception("Invitation failed for %s", email)
             return _render_page(
-                roles=roles, error=str(exc), values=values
+                roles=roles,
+                error="Invitation failed; details are in the invite_bridge logs.",
+                values=values,
             ), 502
 
         urls = result.get("recipientInvitationURLs") or []
@@ -1196,21 +1250,35 @@ def _sync_loop(
 ) -> None:
     # memberships_primed is a one-element list so the loop can flip it after
     # the first successful baseline (mutable flag shared with main).
+    # Network I/O runs on working copies; the lock only guards the swap and
+    # the state-file writes so the HTTP form never blocks on slow calls.
     while True:
         try:
             with known_lock:
-                sync_once(mp, invite, known)
-                _save_state(state_path, known)
-                if _sync_memberships_enabled():
-                    sync_membership_revokes(
-                        mp,
-                        invite,
-                        known,
-                        memberships,
-                        primed=memberships_primed[0],
-                    )
-                    _save_memberships_state(memberships_path, memberships)
+                working_known = dict(known)
+                working_memberships = {
+                    role_oid: dict(members) for role_oid, members in memberships.items()
+                }
+            sync_once(mp, invite, working_known)
+            memberships_enabled = _sync_memberships_enabled()
+            if memberships_enabled:
+                sync_membership_revokes(
+                    mp,
+                    invite,
+                    working_known,
+                    working_memberships,
+                    primed=memberships_primed[0],
+                )
+            with known_lock:
+                known.clear()
+                known.update(working_known)
+                memberships.clear()
+                memberships.update(working_memberships)
+                if memberships_enabled:
                     memberships_primed[0] = True
+                _save_state(state_path, known)
+                if memberships_enabled:
+                    _save_memberships_state(memberships_path, memberships)
         except Exception:
             logger.exception("Sync failed")
             if once:

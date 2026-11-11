@@ -7,7 +7,7 @@
 
 - [x] MidPoint Role create → Invite `POST /roles` (`invite_bridge/`)
 - [x] MidPoint Role delete → Invite `DELETE /roles/{id}`
-- [x] Link stored as MidPoint `costCenter=invite:{id}`
+- [x] Link stored as MidPoint `extension/inviteRoleId` (`costCenter=invite:{id}` read as legacy fallback)
 - [x] SCIM `MIDPOINT_LEADING_GROUPS`: Group create by name; Group DELETE no-op; empty members ignored
 - [x] SCIM idempotent User create (`SCIM_IDEMPOTENT_USER_CREATE`)
 - [x] Compose + `INVITE_*` / `.env.example` / profile toggle (`.env.invite` | `.test.env`)
@@ -21,7 +21,6 @@
 
 ## Remaining (Invite core)
 
-- [ ] Prefer MidPoint extension attribute over `costCenter` for Invite role id
 - [ ] Unit tests for SCIM leading-mode Group behaviour (sibling `../scim`)
 
 ## Parked (not Invite core)

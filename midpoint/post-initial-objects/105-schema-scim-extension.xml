@@ -60,6 +60,15 @@
                             </xsd:appinfo>
                         </xsd:annotation>
                     </xsd:element>
+                    <xsd:element name="inviteRoleId" type="xsd:string" minOccurs="0" maxOccurs="1">
+                        <xsd:annotation>
+                            <xsd:appinfo>
+                                <a:indexed>true</a:indexed>
+                                <a:displayName>Invite role id</a:displayName>
+                                <a:help>OpenConext Invite role id linked by invite_bridge (legacy: costCenter=invite:{id})</a:help>
+                            </xsd:appinfo>
+                        </xsd:annotation>
+                    </xsd:element>
                 </xsd:sequence>
             </xsd:complexType>
 
